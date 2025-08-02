@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
-import { SettingsModel } from "../models/index.js";
+import { SettingsModel, CustomerModel } from "../models/index.js";
+import { generateRatingToken } from "../routes/rating.js";
+import { mockStorage } from "./mockStorage.js";
+import mongoose from "mongoose";
 
 class EmailService {
   private transporters: Map<string, nodemailer.Transporter> = new Map();
@@ -135,7 +138,7 @@ class EmailService {
               <div style="margin: 20px 0;">
                 <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 1 نجمة" class="rating-star">⭐️</a>
                 <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 2 ن��مة" class="rating-star">⭐️</a>
-                <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 3 نجمة" class="rating-star">⭐️</a>
+                <a href="mailto:${fromEmail}?subject=تقييم الخد��ة - 3 نجمة" class="rating-star">⭐️</a>
                 <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 4 نجمة" class="rating-star">⭐️</a>
                 <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 5 نجمة" class="rating-star">⭐️</a>
               </div>
