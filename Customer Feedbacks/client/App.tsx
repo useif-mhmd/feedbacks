@@ -94,6 +94,9 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
+            {/* Public Rating Page */}
+            <Route path="/rate/:token" element={<RatingPage />} />
+
             {/* Dashboard Routes */}
             <Route
               path="/dashboard"
