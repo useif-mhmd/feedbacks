@@ -59,6 +59,8 @@ export default function FeedbackPage() {
         return <Mail className="h-4 w-4" />;
       case "sms":
         return <Smartphone className="h-4 w-4" />;
+      case "web":
+        return <Star className="h-4 w-4" />;
       default:
         return <MessageCircle className="h-4 w-4" />;
     }
