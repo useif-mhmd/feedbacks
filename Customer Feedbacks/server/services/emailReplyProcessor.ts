@@ -99,10 +99,19 @@ class EmailReplyProcessor {
       }
     }
 
-    // Look for rating in body
-    const bodyMatch = body.match(/[1-5]/);
+    // Look for rating in body - try to find a clear number first
+    const explicitRatingMatch = body.match(/(?:تقييم|rating|نجم|star)[^\d]*(\d+)/i);
+    if (explicitRatingMatch) {
+      const rating = parseInt(explicitRatingMatch[1]);
+      if (rating >= 1 && rating <= 5) {
+        return rating;
+      }
+    }
+
+    // Look for standalone number that could be a rating
+    const bodyMatch = body.match(/\b([1-5])\b/);
     if (bodyMatch) {
-      const rating = parseInt(bodyMatch[0]);
+      const rating = parseInt(bodyMatch[1]);
       if (rating >= 1 && rating <= 5) {
         return rating;
       }
@@ -174,7 +183,7 @@ class EmailReplyProcessor {
         });
       }
 
-      console.log(`💫 تم حفظ التقييم عبر الإيميل: ${rating}/5 من ${email}`);
+      console.log(`💫 تم حفظ التقييم عبر الإي��يل: ${rating}/5 من ${email}`);
 
       // Generate threading IDs for proper email conversation
       const threadId = messageId || `feedback-${customer._id}-${Date.now()}`;

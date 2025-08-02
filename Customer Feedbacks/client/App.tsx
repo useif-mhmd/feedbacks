@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import Customers from "./pages/Customers";
 import FeedbackPage from "./pages/FeedbackPage";
 import EmailTest from "./pages/EmailTest";
+import RatingPage from "./pages/RatingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +93,9 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* Public Rating Page */}
+            <Route path="/rate/:token" element={<RatingPage />} />
 
             {/* Dashboard Routes */}
             <Route

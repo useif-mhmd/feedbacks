@@ -14,6 +14,7 @@ import feedbackRoutes from "./routes/feedback.js";
 import statsRoutes from "./routes/stats.js";
 import migrationRoutes from "./routes/migration.js";
 import emailWebhookRoutes from "./routes/email-webhook.js";
+import ratingRoutes from "./routes/rating.js";
 
 // Load environment variables
 dotenv.config();
@@ -53,6 +54,7 @@ export function createServer() {
   app.use("/api/feedback", feedbackRoutes);
   app.use("/api/migration", migrationRoutes);
   app.use("/api/email", emailWebhookRoutes);
+  app.use("/api/rating", ratingRoutes);
 
   // Error handling middleware
   app.use(

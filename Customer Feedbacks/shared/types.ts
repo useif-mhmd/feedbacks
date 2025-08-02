@@ -46,7 +46,7 @@ export interface Feedback {
   customerName?: string;
   rating: number;
   reason?: string;
-  source: "whatsapp" | "email" | "sms";
+  source: "whatsapp" | "email" | "sms" | "web";
   status: "pending" | "processed";
   createdAt?: Date;
   updatedAt?: Date;

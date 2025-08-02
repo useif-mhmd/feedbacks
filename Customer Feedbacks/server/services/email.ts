@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
-import { SettingsModel } from "../models/index.js";
+import { SettingsModel, CustomerModel } from "../models/index.js";
+import { generateRatingToken } from "../routes/rating.js";
+import { mockStorage } from "./mockStorage.js";
+import mongoose from "mongoose";
 
 class EmailService {
   private transporters: Map<string, nodemailer.Transporter> = new Map();
@@ -19,7 +22,7 @@ class EmailService {
     const { email, password, host, port } = settings.smtpConfig;
 
     // إنشاء transporter جديد للمستخدم
-    const transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransporter({
       host: host || 'smtp.hostinger.com',
       port: port || 587,
       secure: false,
@@ -58,11 +61,54 @@ class EmailService {
   async sendFeedbackEmail(to: string, userId: string, customerName?: string): Promise<boolean> {
     try {
       const transporter = await this.getTransporter(userId);
+      const isMongoAvailable = () => mongoose.connection.readyState === 1;
+
+      // Get or create customer
+      let customer;
+      if (isMongoAvailable()) {
+        customer = await CustomerModel.findOne({ email: to, userId });
+        if (!customer) {
+          customer = await CustomerModel.create({
+            userId,
+            email: to,
+            name: customerName || `عميل ${to.split("@")[0]}`,
+            phone: `email_${Date.now()}`,
+          });
+        }
+      } else {
+        customer = mockStorage.getCustomers().find(c => c.email === to && c.userId === userId);
+        if (!customer) {
+          customer = mockStorage.upsertCustomer({
+            userId,
+            email: to,
+            name: customerName || `عميل ${to.split("@")[0]}`,
+            phone: `email_${Date.now()}`,
+          });
+        }
+      }
+
+      // Generate rating token
+      const ratingToken = generateRatingToken(
+        userId,
+        customer._id!.toString(),
+        to,
+        customerName,
+        customer.phone
+      );
 
       // Get settings for this user
-      const settings = await SettingsModel.findOne({ userId });
-      const googleMapsLink = settings?.googleMapsLink || "https://maps.google.com/your-business-location";
-      const fromEmail = settings?.smtpConfig.email || 'info@mshareb.com';
+      const settings = isMongoAvailable() ? 
+        await SettingsModel.findOne({ userId }) : 
+        mockStorage.getSettings();
+      
+      const fromEmail = settings?.smtpConfig?.email || 'info@mshareb.com';
+      
+      // Get current domain for rating link
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL || 'https://your-domain.com'
+        : 'http://localhost:8080';
+      
+      const ratingUrl = `${baseUrl}/rate/${ratingToken}`;
 
       const htmlContent = `
         <!DOCTYPE html>
@@ -97,15 +143,22 @@ class EmailService {
               text-align: center;
               margin: 30px 0;
             }
-            .rating-star {
-              font-size: 40px;
-              color: #fbbf24;
-              margin: 0 5px;
-              cursor: pointer;
+            .rating-btn {
+              background: linear-gradient(135deg, #2563eb, #1d4ed8);
+              color: white;
+              padding: 15px 30px;
+              border-radius: 10px;
               text-decoration: none;
+              display: inline-block;
+              font-weight: bold;
+              font-size: 18px;
+              margin: 20px 0;
+              transition: transform 0.2s;
             }
-            .rating-star:hover {
-              color: #f59e0b;
+            .rating-btn:hover {
+              transform: translateY(-2px);
+              color: white;
+              text-decoration: none;
             }
             .footer {
               text-align: center;
@@ -113,13 +166,10 @@ class EmailService {
               font-size: 14px;
               margin-top: 30px;
             }
-            .google-maps-note {
-              background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
-              border: 1px solid #0284c7;
-              border-radius: 10px;
-              padding: 15px;
-              margin: 20px 0;
-              text-align: center;
+            .stars-demo {
+              font-size: 30px;
+              margin: 15px 0;
+              color: #fbbf24;
             }
           </style>
         </head>
@@ -131,40 +181,37 @@ class EmailService {
             </div>
 
             <div class="rating-container">
-              <h2>من فضلك قيّم زيارتك:</h2>
-              <div style="margin: 20px 0;">
-                <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 1 نجمة" class="rating-star">⭐️</a>
-                <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 2 ن��مة" class="rating-star">⭐️</a>
-                <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 3 نجمة" class="rating-star">⭐️</a>
-                <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 4 نجمة" class="rating-star">⭐️</a>
-                <a href="mailto:${fromEmail}?subject=تقييم الخدمة - 5 نجمة" class="rating-star">⭐️</a>
+              <h2>من فضلك قيّم تجربتك معنا:</h2>
+              <div class="stars-demo">
+                ⭐️ ⭐️ ⭐️ ⭐️ ⭐️
               </div>
-              <p style="color: #6b7280;">اضغط على عدد النجوم التي تعبر عن تقييمك</p>
+              
+              <a href="${ratingUrl}" class="rating-btn">
+                🌟 اضغط هنا للتقييم
+              </a>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 15px;">
+                الرابط صالح لمدة 7 أيام من تاريخ الإرسال
+              </p>
             </div>
 
-            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>أو يمكنك الرد على هذا الإيميل مباشرة برقم من 1 إلى 5:</strong></p>
-              <ul style="margin: 10px 0;">
-                <li>1 = غير راضي تماماً</li>
-                <li>2 = غير راضي</li>
-                <li>3 = محايد</li>
-                <li>4 = راضي</li>
-                <li>5 = راضي جداً</li>
-              </ul>
-            </div>
-
-            <div class="google-maps-note">
+            <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #0284c7;">
               <p style="color: #0369a1; font-weight: bold; margin: 5px 0;">
-                💡 إذا كان تقييمك إيجابياً (4-5 ن��وم)
+                💡 لماذا نطلب تقييمك؟
               </p>
-              <p style="color: #0c4a6e; font-size: 14px;">
-                سنطلب منك ترك تقييم على Google Maps لمساعدة عملاء آخرين!
-              </p>
+              <ul style="color: #0c4a6e; font-size: 14px; margin: 10px 0;">
+                <li>لتحسين جودة خدماتنا</li>
+                <li>لمعرفة آرائكم وملاحظاتكم</li>
+                <li>لمساعدة عملاء آخرين في اختيار خدماتنا</li>
+              </ul>
             </div>
 
             <div class="footer">
               <p>شكراً لوقتك الثمين! 🌟</p>
               <p>فريق خدمة العملاء</p>
+              <p style="font-size: 12px; color: #9ca3af; margin-top: 10px;">
+                إذا كنت تواجه مشكلة في الرابط، يمكنك الرد على هذا الإيميل برقم من 1 إلى 5
+              </p>
             </div>
           </div>
         </body>
@@ -179,7 +226,7 @@ class EmailService {
       };
 
       await transporter.sendMail(mailOptions);
-      console.log(`✅ تم إرسال إيميل إلى ${to}`);
+      console.log(`✅ تم إرسال إيميل إلى ${to} مع رابط التقييم`);
       return true;
     } catch (error) {
       console.error(`❌ فشل إرسال إيميل إلى ${to}:`, error);
