@@ -74,6 +74,8 @@ export default function FeedbackPage() {
         return "border-blue-500 text-blue-700 bg-blue-50";
       case "sms":
         return "border-purple-500 text-purple-700 bg-purple-50";
+      case "web":
+        return "border-yellow-500 text-yellow-700 bg-yellow-50";
       default:
         return "border-gray-500 text-gray-700 bg-gray-50";
     }
