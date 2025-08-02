@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import Customers from "./pages/Customers";
 import FeedbackPage from "./pages/FeedbackPage";
 import EmailTest from "./pages/EmailTest";
+import RatingPage from "./pages/RatingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
