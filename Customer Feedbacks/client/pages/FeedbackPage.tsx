@@ -89,6 +89,8 @@ export default function FeedbackPage() {
         return "إيميل";
       case "sms":
         return "SMS";
+      case "web":
+        return "موقع إلكتروني";
       default:
         return source;
     }
