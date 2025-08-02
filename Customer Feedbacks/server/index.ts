@@ -54,6 +54,7 @@ export function createServer() {
   app.use("/api/feedback", feedbackRoutes);
   app.use("/api/migration", migrationRoutes);
   app.use("/api/email", emailWebhookRoutes);
+  app.use("/api/rating", ratingRoutes);
 
   // Error handling middleware
   app.use(
